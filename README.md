@@ -1,1 +1,1 @@
-# MIDI2pianoroll
+# midi2pianoroll
