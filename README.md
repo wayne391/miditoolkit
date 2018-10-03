@@ -1,11 +1,33 @@
-# midi2painoroll
+# midi2painoroll ()
+Warning: **beta version**
 
 Python package for Midi to pianoroll conversion and visualization.
-Note: It is still a **beta version**!
+
+## Major Change
+* Directly parsing from MIDI
+* arbitrary resample
+* Symbolic and absolute timing
+* Arbitrary range of time and pitch
+* Control Changes
+* Two visualization method: MIDI (in rectanlge) and Matrix
+* Arbitrary note off design (<0 for different color)
+
+All modification can be made by simply setting the attributes of classes.
+
+## TODO List
+* Multitrack level
+    * beat/downbeat extractor (Done)
+    * Major Container
+* Other visualization metod: magnitude and etc.
+* ticks of X and Y axis
+* Linting and better structure
+* pianoroll to midi (through mido)
+* Sanity Check
+
 
 ## Usage
 
-You can run the 'main.py' scrpit directly 
+You can directly run the main.py scrpit
 
 ## Sample Result
 
