@@ -1,9 +1,9 @@
-# midi2painoroll ()
+# midi2painoroll
 Warning: **beta version**
 
 Python package for Midi to pianoroll conversion and visualization.
 
-## Major Change
+## Major Advantages
 * Directly parsing from MIDI
 * arbitrary resample
 * Symbolic and absolute timing
