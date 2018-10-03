@@ -11,7 +11,35 @@ HAS_MATPLOTLIB = True
 
 check = lambda x, up, low: isinstance(x, int) and low<=x<=up
 
+# def get_beats_array(self, midi):
+    #     time_signatures = midi.time_signature_changes
+    #     ticks_per_beat = midi.ticks_per_beat
 
+    #     if not time_signatures or time_signatures[0].time > 0:
+    #         time_signatures.insert(0, TimeSignature(4, 4, start_tick))
+
+    #     start_tick = time_signatures[0].time
+    #     fianl_tick = midi.max_tick
+    #     beats = []
+    #     downbeats = []
+    #     num_ts = len(time_signatures)
+    #     for idx in range(num_ts):
+    #         ts = time_signatures[idx]
+    #         tmp_end_tick = time_signatures[idx+1].time if (idx+1) < num_ts else fianl_tick
+
+    #         beat_len = ticks_per_beat/(ts.denominator/4)
+    #         if beat_len % 1 != 0:
+    #             raise ValueError('length of beat is fractional')
+    #         beats_per_bar = ts.numerator
+
+    #         tmp_beats = [t for t in range(start_tick, tmp_end_tick, int(beat_len))]
+    #         tmp_downbeats = tmp_beats[0:-1:beats_per_bar]
+
+    #         beats.extend(tmp_beats)
+    #         downbeats.extend(tmp_downbeats)
+    #         start_tick = tmp_end_tick
+    #     return beats, downbeats
+    
 class TrackPianoroll(object):
     def __init__(self,
                  midi_track,
