@@ -28,11 +28,13 @@ class MidiFile(object):
 
             # resample_ticks_per_beat
             self.resample_ratio = 1.0
+            self.ticks_per_beat_ori = midi_data.ticks_per_beat
             if resample_ticks_per_beat:
                 self.resample_ratio = resample_ticks_per_beat/midi_data.ticks_per_beat
                 self.ticks_per_beat = resample_ticks_per_beat
             else:
                 self.ticks_per_beat = midi_data.ticks_per_beat
+
 
             # Convert tick values in midi_data to absolute, a useful thing.
             midi_data = self._delta_to_abs(midi_data, method=resample_method)
