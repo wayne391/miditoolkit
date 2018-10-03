@@ -5,7 +5,7 @@ Note: It is still a **beta version**!
 
 ## Usage
 
-You can directly run the main.py scrpit
+You can run the 'main.py' scrpit directly 
 
 ## Sample Result
 
