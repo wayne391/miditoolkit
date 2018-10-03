@@ -44,3 +44,5 @@ track.plot_pianoroll_mat('symbolic_larger.png')
 track.time_range = (2000, 8000)
 track.plot_control_change(64, 'cc_64')
 
+print(track.pianoroll.shape)
+
