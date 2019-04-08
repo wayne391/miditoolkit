@@ -41,7 +41,7 @@ fig, ax = vis.plot(
     y_range=y_range)
 
 # plt.show()
-fig.savefig('test.png')
+fig.savefig('figs/test.png')
 plt.close()
 
 # ---------------------------------------------
@@ -60,7 +60,7 @@ fig, ax = vis.plot_chroma(
     x_range=x_range)
 
 # plt.show()
-fig.savefig('test_chroma.png')
+fig.savefig('figs/test_chroma.png')
 plt.close()
 
 # ---------------------------------------------
@@ -80,5 +80,5 @@ fig, ax = vis.plot(
     xtick_interval=2)
 
 # plt.show()
-fig.savefig('test2.png')
+fig.savefig('figs/test2.png')
 plt.close()
