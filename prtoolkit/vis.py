@@ -14,11 +14,12 @@ from .utils import pitch_padding
 # color maps
 NOTE_CMAP = 'Greens'
 CHROMA_CMAP = 'magma'
+SM_CMAP = 'gist_gray'
+PR_CMAP = 'gray'
 
-# parameters for plotting pianoroll background
+# colors
 WHITE_KEY_SATUR = 0.96
 BLACK_KEY_SATUR = 0.78
-PR_CMAP = 'gray'
 
 # font size
 XLABEL_FONT_SIZE = 5
@@ -92,17 +93,15 @@ def plot(
     figsize : tuple
         (h, w). Using it to customize the output image when the result
         is too large.
-    filename : str
-        filename for saving. The default is 'test.png',
     dpi : int
-        dpi
+        Dots per inch.
     """
 
     # init the figure
     if figsize is not None:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     else:
-        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        fig, ax = plt.subplots(dpi=dpi)
 
     # critical paras
     st, ed = note_range
@@ -151,6 +150,7 @@ def plot(
 
     return fig, ax
 
+
 def plot_chroma(
         chroma,
         beat_resolution=24,
@@ -187,16 +187,14 @@ def plot_chroma(
     figsize : tuple
         (h, w). Using it to customize the output image when the result
         is too large.
-    filename : str
-        filename for saving. The default is 'test.png',
     dpi : int
-        dpi
+        Dots per inch.
     """
     # init the figure
     if figsize is not None:
         fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
     else:
-        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        fig, ax = plt.subplots(dpi=dpi)
 
     # chroma
     sz_time, sz_pitch = chroma.shape
@@ -216,6 +214,7 @@ def plot_chroma(
         sz_time,
         beat_resolution,
         downbeats)
+
     # plot yticks
     yticks = np.arange(0, 12)
     ax.set_yticks(yticks)
@@ -242,23 +241,85 @@ def plot_chroma(
 
     return fig, ax
 
+
+def plot_heatmap(
+        to_plot,
+        tick_interval=None,
+        origin='upper',
+        figsize=None,
+        dpi=300):
+
+    """Plot Similarity Matrix
+
+    Parameters
+    ----------
+    to_plot : np.array
+        an M x N heatmap matrix. If the input is the self-similarity one,
+        thse size would be M x M
+    tick_interval : int
+        interval between ticks of both axis. If the input is None, it will
+        be automatically adjusted.
+    origin : str
+        'upper', 'lower'. Layout of the imshow
+    figsize : tuple
+        (h, w). Using it to customize the output image when the result
+        is too large.
+    dpi : int
+        Dots per inch.
+    """
+
+    # init the figure
+    if figsize is not None:
+        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+    else:
+        fig, ax = plt.subplots(dpi=dpi)
+
+    # display
+    plt.imshow(
+        to_plot,
+        cmap=SM_CMAP,
+        vmin=np.min(to_plot),
+        vmax=np.max(to_plot),
+        origin=origin,
+        interpolation='none')
+
+    # plot ticks
+    sx, sy = to_plot.shape
+    if tick_interval is None:
+        tick_interval = min(sx, sy) // 20
+
+    xticks = np.arange(0, sx)
+    yticks = np.arange(0, sy)
+
+    ax.set_xticks(xticks)
+    ax.set_xticklabels(xticks, fontsize=XLABEL_FONT_SIZE, rotation=-90)
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(yticks, fontsize=XLABEL_FONT_SIZE)
+
+    ax.xaxis.set_tick_params(labeltop='on', top=True)  # show labs on top
+    return fig, ax
+
 # -------------------------------------------- #
 # Auxiliary Tools
 # -------------------------------------------- #
 
+
 def plot_grid(
         ax,
-        layout):
-
+        layout,
+        which='minor',
+        color='k'):
+    # always using 'minor' tick to plot grid
     # argumens check
     if layout not in ['x', 'y', 'both', None]:
         raise ValueError('Unkown Grid layout: %s' % layout)
 
     # grid Show
     if layout in ['x', 'both']:
-        ax.grid(axis='x', color='k', which='minor', linestyle='-', linewidth=.2, alpha=0.5)
+        ax.grid(axis='x', color=color, which=which, linestyle='-', linewidth=.2, alpha=0.5)
     if layout in ['y', 'both']:
-        ax.grid(axis='y', color='k', which='minor', linestyle='-', linewidth=.2, alpha=0.75)
+        ax.grid(axis='y', color=color, which=which, linestyle='-', linewidth=.2, alpha=0.75)
+
 
 def plot_yticks(
         ax,
@@ -267,7 +328,7 @@ def plot_yticks(
         max_tick,
         beat_resolution,
         downbeats):
-
+    # tick arrangement
     # - ytick, minor for grid
     yticks = np.arange(0.5, 128.5)
     ax.set_yticks(yticks, minor=True)
@@ -290,6 +351,7 @@ def plot_yticks(
     else:
         ax.tick_params(axis='y', which='major', width=0)
         ax.set_yticklabels([])
+
 
 def plot_xticks(
         ax,
@@ -388,6 +450,7 @@ def plot_note_entries(
         vmax=127 + color_shift,
         origin='lower',
         interpolation='none')
+
 
 def _label_selector(labels, skip):
     if skip > 1:
