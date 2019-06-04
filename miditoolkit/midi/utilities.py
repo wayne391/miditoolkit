@@ -1,4 +1,5 @@
-"""Utilty functions for converting between MIDI data and human-readable/usable
+"""
+Utilty functions for converting between MIDI data and human-readable/usable
 values
 
 """

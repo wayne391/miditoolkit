@@ -218,7 +218,7 @@ class TempoChange(object):
     """
 
     def __init__(self, tempo, time):
-        if not (isinstance(tempo, float) and tempo > 0):
+        if not (isinstance(tempo, (int, float)) and tempo > 0):
             raise ValueError(
                 '{} is not a valid `tempo` type or value'.format(
                     tempo))
