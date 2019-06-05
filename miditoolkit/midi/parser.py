@@ -274,7 +274,7 @@ class MidiFile(object):
             resample_method=round):
             
         return convert_note_stream_to_pianoroll(
-            instrument_idx,
+            self.instruments[instrument_idx].notes,
             self.ticks_per_beat,
             resample_resolution=resample_resolution, 
             resample_method=resample_method,
@@ -307,7 +307,7 @@ class MidiFile(object):
         output_str = "\n".join(output_list)
         return output_str
 
-    def dump(self, filename='res.mid', segment=None, shift=True):
+    def dump(self, filename='res.mid', segment=None, shift=True, instrument_idx=None):
         def event_compare(event1, event2):
             secondary_sort = {
                 'set_tempo': lambda e: (1 * 256 * 256),
@@ -329,7 +329,16 @@ class MidiFile(object):
                 return (secondary_sort[event1.type](event1) -
                         secondary_sort[event2.type](event2))
             return event1.time - event2.time
-        
+        if instrument_idx is None:
+            pass
+        if len(instrument_idx)==0:
+            return
+        elif isinstance(instrument_idx, int):
+            instrument_idx = [instrument_idx]
+        elif isinstance(instrument_idx, list):
+            pass
+        else:
+            raise ValueError('Invalid instrument index')
         # boundary
         if segment is not None:
             if not isinstance(segment, list) and not isinstance(segment, tuple):
@@ -440,7 +449,11 @@ class MidiFile(object):
         channels = list(range(16))
         channels.remove(9)  # for durm
 
-        for n, instrument in enumerate(self.instruments):
+        for cur_idx, instrument in enumerate(self.instruments):
+            if instrument_idx:
+                if cur_idx not in instrument_idx:
+                    continue
+
             track = mido.MidiTrack()
             # segment-free
             # track name
@@ -453,7 +466,7 @@ class MidiFile(object):
                 channel = 9
             # Otherwise, choose a channel from the possible channel list
             else:
-                channel = channels[n % len(channels)]
+                channel = channels[cur_idx % len(channels)]
             # Set the program number
             track.append(mido.Message(
                 'program_change', time=0, program=instrument.program,
