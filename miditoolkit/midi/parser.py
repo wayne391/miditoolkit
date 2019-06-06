@@ -331,7 +331,7 @@ class MidiFile(object):
             return event1.time - event2.time
         if instrument_idx is None:
             pass
-        if len(instrument_idx)==0:
+        el if len(instrument_idx)==0:
             return
         elif isinstance(instrument_idx, int):
             instrument_idx = [instrument_idx]
@@ -535,6 +535,7 @@ class MidiFile(object):
                 tick += event.time
 
         # Write it out
+        print('writed!!')
         midi_parsed.save(filename=filename)
 
 

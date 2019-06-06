@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 from scipy.sparse import csc_matrix
 
 '''
@@ -12,7 +13,7 @@ PITCH_RANGE = 128
 
 
 def convert_note_stream_to_pianoroll(
-        note_stream, 
+        note_stream_ori, 
         ticks_per_beat, 
         downbeat=None, 
         resample_resolution=None, 
@@ -21,6 +22,9 @@ def convert_note_stream_to_pianoroll(
         max_tick=None,
         to_sparse=False):
     
+    # pass by value
+    note_stream = deepcopy(note_stream_ori)
+
     # sort by end time
     note_stream = sorted(note_stream, key=lambda x: x.end)
     
@@ -35,6 +39,7 @@ def convert_note_stream_to_pianoroll(
     
     # resampling
     if resample_factor != 1.0:
+        max_tick = int(resample_method(max_tick * resample_factor))
         for note in note_stream:
             note.start = int(resample_method(note.start * resample_factor))
             note.end = int(resample_method(note.end * resample_factor))
