@@ -9,6 +9,7 @@ import warnings
 import functools
 import collections
 import numpy as np
+from copy import deepcopy
 from .containers import KeySignature, TimeSignature, Lyric, Note, PitchBend, ControlChange, Instrument, TempoChange
 from miditoolkit.pianoroll.converter import convert_note_stream_to_pianoroll
 
@@ -266,6 +267,10 @@ class MidiFile(object):
             self.max_tick, 
             self.tempo_changes)
 
+    def get_instruments_abs_timing(self):
+        tick_to_time = self.get_tick_to_time_mapping()
+        return convert_instruments_timing_from_sym_to_abs(self.instruments, tick_to_time)
+
     def get_instrument_pianoroll(
             self, 
             instrument_idx,
@@ -331,7 +336,7 @@ class MidiFile(object):
             return event1.time - event2.time
         if instrument_idx is None:
             pass
-        el if len(instrument_idx)==0:
+        elif len(instrument_idx)==0:
             return
         elif isinstance(instrument_idx, int):
             instrument_idx = [instrument_idx]
@@ -403,6 +408,10 @@ class MidiFile(object):
                     tempo=DEFAULT_TEMPO))
         # add each
         for t in self.tempo_changes:
+            # type check
+            if isinstance(t.tempo, float):
+                t.tempo = mido.bpm2tempo(t.tempo)
+
             tempo_list.append(
                 mido.MetaMessage(
                     'set_tempo',
@@ -631,3 +640,21 @@ def get_tick_to_time_mapping(ticks_per_beat, max_tick, tempo_changes):
         tick_to_time[start_tick:end_tick + 1] = (acc_time + seconds_per_tick *ticks)
         acc_time = tick_to_time[end_tick]
     return tick_to_time
+
+def convert_instruments_timing_from_sym_to_abs(instruments, tick_to_time):
+    proc_instrs = deepcopy(instruments)
+    for instr in proc_instrs:
+        for note in instr.notes:
+            note.start = float(tick_to_time[note.start])
+            note.end = float(tick_to_time[note.end])
+    return proc_instrs
+
+
+def convert_instruments_timing_from_abs_to_sym(instruments, time_to_tick):
+    proc_instrs = deepcopy(instruments)
+    for instr in proc_instrs:
+        for note in instr.notes:
+            # find nearest
+            note_start = find_nearest_np(time_to_tick, note.start)
+            note_end = find_nearest_np(time_to_tick, note.end)
+    return proc_instrs
