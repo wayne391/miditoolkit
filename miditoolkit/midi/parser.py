@@ -276,7 +276,8 @@ class MidiFile(object):
             instrument_idx,
             binary_thres=None,
             resample_resolution=None, 
-            resample_method=round):
+            resample_method=round,
+            keep_note=True):
             
         return convert_note_stream_to_pianoroll(
             self.instruments[instrument_idx].notes,
@@ -284,7 +285,8 @@ class MidiFile(object):
             resample_resolution=resample_resolution, 
             resample_method=resample_method,
             binary_thres=binary_thres,
-            max_tick=self.max_tick)
+            max_tick=self.max_tick,
+            keep_note=keep_note)
 
     def __repr__(self):
         output_list = [
@@ -655,6 +657,6 @@ def convert_instruments_timing_from_abs_to_sym(instruments, time_to_tick):
     for instr in proc_instrs:
         for note in instr.notes:
             # find nearest
-            note_start = find_nearest_np(time_to_tick, note.start)
-            note_end = find_nearest_np(time_to_tick, note.end)
+            note.start = _find_nearest_np(time_to_tick, note.start)
+            note.end = _find_nearest_np(time_to_tick, note.end)
     return proc_instrs

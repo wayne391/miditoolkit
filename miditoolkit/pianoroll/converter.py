@@ -20,7 +20,8 @@ def convert_note_stream_to_pianoroll(
         resample_method=round,
         binary_thres=None,
         max_tick=None,
-        to_sparse=False):
+        to_sparse=False, 
+        keep_note=True):
     
     # pass by value
     note_stream = deepcopy(note_stream_ori)
@@ -57,6 +58,11 @@ def convert_note_stream_to_pianoroll(
         # duration
         duration = note.end - note.start
 
+        # keep notes with zero length (set to 1)
+        if keep_note and (duration == 0):
+            duration = 1
+            note.end += 1
+
         # set time
         time_coo.extend(np.arange(note.start, note.end))
         
@@ -74,3 +80,7 @@ def convert_note_stream_to_pianoroll(
     pianoroll = pianoroll if to_sparse else pianoroll.toarray()
     
     return pianoroll      
+
+
+def convert_pianoroll_to_note_stream():
+    pass
