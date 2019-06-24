@@ -28,7 +28,7 @@ class Note(object):
         return self.end - self.start
 
     def __repr__(self):
-        return 'Note(start={}, end={}, pitch={}, velocity={})'.format(
+        return 'Note(start={:d}, end={:d}, pitch={}, velocity={})'.format(
             self.start, self.end, self.pitch, self.velocity)
 
 
@@ -169,19 +169,6 @@ class KeySignature(object):
 
     def __str__(self):
         return '{} [{}] at {:d} ticks'.format(self.key_name, self.key_number, self.time)
-
-
-class Marker(object):
-    def __init__(self, text, time):
-        self.text = text
-        self.time = time
-
-    def __repr__(self):
-        return 'Marker(text="{}", time={})'.format(
-            self.text.replace('"', r'\"'), self.time)
-
-    def __str__(self):
-        return '"{}" at {} ticks'.format(self.text, self.time)
 
 
 class Lyric(object):

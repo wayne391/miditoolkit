@@ -10,7 +10,7 @@ import functools
 import collections
 import numpy as np
 from copy import deepcopy
-from .containers import KeySignature, TimeSignature, Marker, Lyric, Note, PitchBend, ControlChange, Instrument, TempoChange
+from .containers import KeySignature, TimeSignature, Lyric, Note, PitchBend, ControlChange, Instrument, TempoChange
 from miditoolkit.pianoroll.converter import convert_note_stream_to_pianoroll
 
 DEFAULT_TEMPO = int(500000)
@@ -25,7 +25,6 @@ class MidiFile(object):
             self.tempo_changes = []
             self.time_signature_changes = []
             self.key_signature_changes = []
-            self.markers = []
             self.lyrics = []
             self.instruments = []
             return 
@@ -51,9 +50,7 @@ class MidiFile(object):
         self.max_tick = max([max([e.time for e in t]) for t in mido_obj.tracks]) + 1
 
         # Populate the list of key and time signature changes
-        self.key_signature_changes = self._load_key_signature(mido_obj)
-        self.time_signature_changes = self._load_tempo_changes(mido_obj)
-        self.markers = self._load_marker(mido_obj)
+        self.key_signature_changes, self.time_signature_changes = self._load_metadata(mido_obj)
         self.lyrics = self._load_lyrics(mido_obj)
 
         # sort
@@ -90,9 +87,10 @@ class MidiFile(object):
                             tempo_changes.append(TempoChange(tempo, tick))
         return tempo_changes
 
-    def _load_key_signature(self, mido_obj):
+    def _load_metadata(self, mido_obj):
         # metadata: key and time signature
         key_signature_changes = []
+        time_signature_changes = []
 
         # traversing all tracks to seek messagess
         for track in mido_obj.tracks:
@@ -100,29 +98,13 @@ class MidiFile(object):
                 if event.type == 'key_signature':
                     key_obj = KeySignature(event.key, event.time)
                     key_signature_changes.append(key_obj)
-        return key_signature_changes
 
-    def _load_time_signature(self, mido_obj):
-        time_signature_changes = []
-
-        # traversing all tracks to seek messagess
-        for track in mido_obj.tracks:
-            for event in track:
-                if event.type == 'time_signature':
+                elif event.type == 'time_signature':
                     ts_obj = TimeSignature(event.numerator,
                                         event.denominator,
                                         event.time)
                     time_signature_changes.append(ts_obj)
-        return time_signature_changes 
-        
-    def _load_marker(self, mido_obj):
-        markers = []
-         # traversing all tracks to seek messagess
-        for track in mido_obj.tracks:
-            for event in track:
-                if event.type == 'marker':
-                    markers.append(Marker(event.text, event.time))
-        return markers
+        return key_signature_changes, time_signature_changes, 
 
     def _load_lyrics(self, mido_obj):
         lyrics = []
@@ -313,7 +295,6 @@ class MidiFile(object):
             "Tempo changes: {}".format(self.tempo_changes),
             "Time sig: {}".format(self.time_signature_changes),
             "Key sig: {}".format(self.key_signature_changes),
-            "Markers {}".format(bool(len(self.markers))), 
             "Lyrics: {}".format(bool(len(self.lyrics))),
             "Instruments: {}".format(len(self.instruments))
         ]
@@ -339,16 +320,15 @@ class MidiFile(object):
                 'set_tempo': lambda e: (1 * 256 * 256),
                 'time_signature': lambda e: (2 * 256 * 256),
                 'key_signature': lambda e: (3 * 256 * 256),
-                'marker': lambda e: (4 * 256 * 256),
-                'lyrics': lambda e: (5 * 256 * 256),
-                'program_change': lambda e: (6 * 256 * 256),
-                'pitchwheel': lambda e: ((7 * 256 * 256) + e.pitch),
+                'lyrics': lambda e: (4 * 256 * 256),
+                'program_change': lambda e: (5 * 256 * 256),
+                'pitchwheel': lambda e: ((6 * 256 * 256) + e.pitch),
                 'control_change': lambda e: (
-                    (8 * 256 * 256) + (e.control * 256) + e.value),
-                'note_off': lambda e: ((9 * 256 * 256) + (e.note * 256)),
+                    (7 * 256 * 256) + (e.control * 256) + e.value),
+                'note_off': lambda e: ((8 * 256 * 256) + (e.note * 256)),
                 'note_on': lambda e: (
-                    (10 * 256 * 256) + (e.note * 256) + e.velocity),
-                'end_of_track': lambda e: (11 * 256 * 256)
+                    (9 * 256 * 256) + (e.note * 256) + e.velocity),
+                'end_of_track': lambda e: (10 * 256 * 256)
             }
             if (event1.time == event2.time and
                     event1.type in secondary_sort and
@@ -407,7 +387,6 @@ class MidiFile(object):
                 time=0, 
                 numerator=4, 
                 denominator=4))
-
         # add each
         for ts in self.time_signature_changes:
             ts_list.append(
@@ -461,23 +440,14 @@ class MidiFile(object):
                 'key_signature', time=ks.time,
                 key=key_number_to_mido_key_name[ks.key_number]))
 
-        # 5. Markers
-        markers_list = []
-        for m in self.markers:
-            markers_list.append(
-                mido.MetaMessage(
-                    'marker', 
-                    time=m.time, 
-                    text=m.text))
-
         if segment:
             ts_list = include_meta_events_within_range(ts_list, start_tick, end_tick, shift=shift, front=True)
             tempo_list = include_meta_events_within_range(tempo_list, start_tick, end_tick, shift=shift, front=True)
             lyrics_list = include_meta_events_within_range(lyrics_list, start_tick, end_tick, shift=shift, front=False)
             key_list = include_meta_events_within_range(key_list, start_tick, end_tick, shift=shift, front=True)
 
-        meta_track = ts_list + tempo_list + lyrics_list + key_list + markers_list
-        
+        meta_track = ts_list + tempo_list + lyrics_list + key_list
+
         # sort
         meta_track.sort(key=functools.cmp_to_key(event_compare))
 
