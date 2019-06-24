@@ -1,48 +1,38 @@
 
 # miditoolkit
-Warning: **beta version**
-
-Python package for Midi to pianoroll conversion and visualization.
-
-## Major Advantages
-* Directly parsing from MIDI
-* arbitrary resample
-* Symbolic and absolute timing
-* Arbitrary range of time and pitch
-* Control Changes
-* Two visualization method: MIDI (in rectanlge) and Matrix
-* Arbitrary note off design (<0 for different color)
-
-All modification can be made by simply setting the attributes of classes.
-
-## TODO List
-* Multitrack level
-    * beat/downbeat extractor (Done)
-    * Major Container
-* Other visualization metod: magnitude and etc.
-* ticks of X and Y axis
-* Linting and better structure
-* pianoroll to midi (through mido)
-* Sanity Check
-
-## Usage
-
-You can directly run the main.py scrpit
-
-## Sample Result
-
-![Fig](figs/symbolic.png)
-![Fig](figs/figs/absolute.png)
-![Fig](figs/symbolic_larger.png)
-![Fig](figs/symbolic_off_none.png)
-![Fig](figs/symbolic_off_-1.png)
-![Fig](figs/cc_64.png)
+Python package for midi/piano-roll manipulation, conversion and visualization.
 
 
-## Piano Roll ToolKit
+## Installation
+The latest release is available on PyPI, and you can install it via pip:
 
-Set of functions for piano roll editing and visualization.
+```
+pip install miditoolkit
+```
 
+## Usgae
+
+Please refer to [manual.py](manual.py)
+## Functions
+
+### midi
+
+Codes here are modified from [pretty_midi](https://github.com/craffel/pretty-midi). To obtain the midi information faithfully, I choose to preserve the original design of time (symbolic, ticks per beat).
+
+The same as pretty_midi, the parser wraps midi events into containers. Delta timing is transformed into absolute timing. Finally, if one track with multiple channel and program number, they will be splitted into individual tracks.
+
+
+### pianoroll
+
+* Piano roll (pitch number & downbeat)
 ![image](figs/test.png)
-![image](figs/test_chroma.png)
+
+* Piano roll  (pitch name & beat)
 ![image](figs/test2.png)
+
+* Chromagram
+![image](figs/test_chroma.png)
+
+### analyzer
+***Warning: under construction***
+
