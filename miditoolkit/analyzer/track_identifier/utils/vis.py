@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix
 
-from track_identifier.utils.misc import unit_normalize
+from  miditoolkit.analyzer.track_identifier.utils.misc import unit_normalize
 
 
 def estimate_pdf(data, x_range=(0, 1), nbins=10000, is_norm=True):

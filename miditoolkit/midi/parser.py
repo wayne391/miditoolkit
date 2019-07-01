@@ -26,7 +26,7 @@ class MidiFile(object):
             self.time_signature_changes = []
             self.key_signature_changes = []
             self.lyrics = []
-            self.makers = []
+            self.markers = []
             self.instruments = []
             return 
 
@@ -55,7 +55,7 @@ class MidiFile(object):
         self.time_signature_changes = self._load_time_signatures(mido_obj)
 
         # text
-        self.makers = self._load_markers(mido_obj)
+        self.markers = self._load_markers(mido_obj)
         self.lyrics = self._load_lyrics(mido_obj)
 
         # sort
@@ -320,7 +320,7 @@ class MidiFile(object):
             "tempo changes: {}".format(self.tempo_changes),
             "time sig: {}".format(self.time_signature_changes),
             "key sig: {}".format(self.key_signature_changes),
-            'markers: {}'.format(self.makers),
+            'markers: {}'.format(self.markers),
             "lyrics: {}".format(bool(len(self.lyrics))),
             "instruments: {}".format(len( self.instruments))
         ] 
@@ -445,7 +445,7 @@ class MidiFile(object):
 
         # 4. Markers
         markers_list = []
-        for m in self.makers:
+        for m in self.markers:
             markers_list.append(
                 mido.MetaMessage(
                     'marker', 
