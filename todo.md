@@ -20,6 +20,7 @@
 
 ---
 * time signature change in transcription 
-
+* Edit Mode (In numpy array)
+* MIDI sequencer
 
 ! remember that when dumping, one don't have to use delta timing
