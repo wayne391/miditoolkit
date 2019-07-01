@@ -4,7 +4,7 @@ Python package for midi/piano-roll manipulation, conversion and visualization.
 
 
 ## Installation
-The latest release is available on PyPI, and you can install it via pip:
+The latest release (v0.0.4) is available on PyPI
 
 ```
 pip install miditoolkit
