@@ -1,13 +1,13 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='miditoolkit',
-    version='0.1.2',
+    version='0.0.4',
     description='toolkit for midi/piano-roll manipulation, conversion and visualization.',
     author='Wen-Yi Hsiao',
     author_email='s101062219@gmail.com',
     url='https://github.com/wayne391/miditoolkit',
-    packages=['miditoolkit'],
+    packages=find_packages(),
     classifiers=[
         "Topic :: Multimedia :: Sound/Audio :: MIDI",
     ],
