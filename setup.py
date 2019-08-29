@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='miditoolkit',
-    version='0.0.4',
+    version='0.0.6',
     description='toolkit for midi/piano-roll manipulation, conversion and visualization.',
     author='Wen-Yi Hsiao',
     author_email='s101062219@gmail.com',

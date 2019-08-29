@@ -327,6 +327,13 @@ class MidiFile(object):
         output_str = "\n".join(output_list)
         return output_str
 
+    def get_beats(self):
+        pass
+
+    def get_downbeats(self):
+        pass
+
+
     def dump(self, filename='res.mid', segment=None, shift=True, instrument_idx=None):
         def event_compare(event1, event2):
             secondary_sort = {
@@ -378,7 +385,6 @@ class MidiFile(object):
                 end_tick = get_tick_index_by_seconds(ed, tick_to_time)
 
             if isinstance(st, int):
-                # tick
                 start_tick = st
                 end_tick = ed
 
@@ -401,6 +407,7 @@ class MidiFile(object):
                 time=0, 
                 numerator=4, 
                 denominator=4))
+
         # add each
         for ts in self.time_signature_changes:
             ts_list.append(
@@ -422,6 +429,7 @@ class MidiFile(object):
                     'set_tempo', 
                     time=0, 
                     tempo=DEFAULT_TEMPO))
+
         # add each
         for t in self.tempo_changes:
             # type check
@@ -467,9 +475,9 @@ class MidiFile(object):
             ts_list = include_meta_events_within_range(ts_list, start_tick, end_tick, shift=shift, front=True)
             tempo_list = include_meta_events_within_range(tempo_list, start_tick, end_tick, shift=shift, front=True)
             lyrics_list = include_meta_events_within_range(lyrics_list, start_tick, end_tick, shift=shift, front=False)
+            markers_list = include_meta_events_within_range(markers_list, start_tick, end_tick, shift=shift, front=False)
             key_list = include_meta_events_within_range(key_list, start_tick, end_tick, shift=shift, front=True)
-
-        meta_track = ts_list + tempo_list + lyrics_list + key_list + markers_list
+        meta_track = ts_list + tempo_list + lyrics_list+ markers_list + key_list 
 
         # sort
         meta_track.sort(key=functools.cmp_to_key(event_compare))
@@ -498,9 +506,11 @@ class MidiFile(object):
             # If it's a drum event, we need to set channel to 9
             if instrument.is_drum:
                 channel = 9
+
             # Otherwise, choose a channel from the possible channel list
             else:
                 channel = channels[cur_idx % len(channels)]
+
             # Set the program number
             track.append(mido.Message(
                 'program_change', time=0, program=instrument.program,
@@ -590,6 +600,7 @@ def include_meta_events_within_range(events, st, ed, shift=True, front=True):
     '''
     For time, key signatutr
     '''
+    
     proc_events = []
     num = len(events)
 
@@ -597,18 +608,19 @@ def include_meta_events_within_range(events, st, ed, shift=True, front=True):
         return events
         
     # include events from back
-    for i in range(num - 1, -1, -1):
+    i = num - 1
+    while i >= 0:
         event = events[i]
         if event.time < st:
             break
         if event.time < ed:
             proc_events.append(event)
-    
-    # if the first tick has no event, add the previous one
-    if front:
-        if not proc_events:
-            proc_events = events[i]
+        i -= 1
 
+    # if the first tick has no event, add the previous one
+    if front and (i >= 0):
+        if not proc_events:
+            proc_events = [events[i]]
         elif proc_events[-1].time != st:
             proc_events.append(events[i])
         else:
@@ -622,9 +634,9 @@ def include_meta_events_within_range(events, st, ed, shift=True, front=True):
     shift = st if shift else 0
     for event in proc_events:
         event.time -= st
-        event.time = int(event.time)
+        event.time = int(max(event.time, 0))
         result.append(event)
-    return result
+    return proc_events
         
 
 def _find_nearest_np(array, value):
