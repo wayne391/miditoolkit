@@ -10,7 +10,7 @@ The latest release (v0.0.4) is available on PyPI
 pip install miditoolkit
 ```
 
-## Usgae
+## Usage
 
 Please refer to [manual.py](manual.py)
 ## Functions
