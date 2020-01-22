@@ -1,4 +1,4 @@
-from .utilities import key_name_to_key_number
+import re
 
 
 class Note(object):
@@ -156,7 +156,7 @@ class KeySignature(object):
                 '{} is not a valid `time` type or value'.format(time))
 
         self.key_name = key_name
-        self.key_number = key_name_to_key_number(key_name)
+        self.key_number = _key_name_to_key_number(key_name)
         if not (self.key_number >= 0 and self.key_number < 24):
             raise ValueError(
                 '{} is not a valid `key_number` type or value'.format(
@@ -229,14 +229,6 @@ class TempoChange(object):
     """
 
     def __init__(self, tempo, time):
-        if not (isinstance(tempo, (int, float)) and tempo > 0):
-            raise ValueError(
-                '{} is not a valid `tempo` type or value'.format(
-                    tempo))
-        if not (isinstance(time, (int, float)) and time >= 0):
-            raise ValueError(
-                '{} is not a valid `time` type or value'.format(time))
-
         self.tempo = tempo
         self.time = time
 
@@ -313,3 +305,45 @@ class Instrument(object):
     def __repr__(self):
         return 'Instrument(program={}, is_drum={}, name="{}")'.format(
             self.program, self.is_drum, self.name.replace('"', r'\"'))
+
+
+def _key_name_to_key_number(key_string):
+    # Create lists of possible mode names (major or minor)
+    major_strs = ['M', 'Maj', 'Major', 'maj', 'major']
+    minor_strs = ['m', 'Min', 'Minor', 'min', 'minor']
+    # Construct regular expression for matching key
+    pattern = re.compile(
+        # Start with any of A-G, a-g
+        '^(?P<key>[ABCDEFGabcdefg])'
+        # Next, look for #, b, or nothing
+        '(?P<flatsharp>[#b]?)'
+        # Allow for a space between key and mode
+        ' ?'
+        # Next, look for any of the mode strings
+        '(?P<mode>(?:(?:' +
+        # Next, look for any of the major or minor mode strings
+        ')|(?:'.join(major_strs + minor_strs) + '))?)$')
+    # Match provided key string
+    result = re.match(pattern, key_string)
+    if result is None:
+        raise ValueError('Supplied key {} is not valid.'.format(key_string))
+    # Convert result to dictionary
+    result = result.groupdict()
+
+    # Map from key string to pitch class number
+    key_number = {'c': 0, 'd': 2, 'e': 4, 'f': 5,
+                  'g': 7, 'a': 9, 'b': 11}[result['key'].lower()]
+    # Increment or decrement pitch class if a flat or sharp was specified
+    if result['flatsharp']:
+        if result['flatsharp'] == '#':
+            key_number += 1
+        elif result['flatsharp'] == 'b':
+            key_number -= 1
+    # Circle around 12 pitch classes
+    key_number = key_number % 12
+    # Offset if mode is minor, or the key name is lowercase
+    if result['mode'] in minor_strs or (result['key'].islower() and
+                                        result['mode'] not in major_strs):
+        key_number += 12
+
+    return key_number

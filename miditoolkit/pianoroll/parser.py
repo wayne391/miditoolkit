@@ -12,7 +12,15 @@ Note Stream: dict
 PITCH_RANGE = 128
 
 
-def convert_note_stream_to_pianoroll(
+def get_onsets_pianoroll():
+    pass
+
+
+def get_offsets_pianoroll():
+    pass
+
+
+def get_pianoroll(
         note_stream_ori, 
         ticks_per_beat, 
         downbeat=None, 
@@ -82,5 +90,5 @@ def convert_note_stream_to_pianoroll(
     return pianoroll      
 
 
-def convert_pianoroll_to_note_stream():
+def convert_pianoroll_to_notes():
     pass

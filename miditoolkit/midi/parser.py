@@ -1,9 +1,4 @@
-'''
-Latest
-Modified from pretty_midi: all tempi stored in tick (symolic timing)
-KEY: keep it simple and less modification
-'''
-
+import re
 import mido
 import warnings
 import functools
@@ -11,13 +6,13 @@ import collections
 import numpy as np
 from copy import deepcopy
 from .containers import KeySignature, TimeSignature, Lyric, Note, PitchBend, ControlChange, Instrument, TempoChange, Marker
-from miditoolkit.pianoroll.converter import convert_note_stream_to_pianoroll
 
-DEFAULT_TEMPO = int(500000)
+
+DEFAULT_BPM = int(120)
+
 
 class MidiFile(object):
-    def __init__(self, midi_file=None):
-        
+    def __init__(self, midi_file=None, mode='tick'):
         # create empty file
         if midi_file is None:
             self.ticks_per_beat = 480
@@ -28,44 +23,49 @@ class MidiFile(object):
             self.lyrics = []
             self.markers = []
             self.instruments = []
-            return 
-
+        
         # load
-        if isinstance(midi_file, str):
-            # filename
-            mido_obj = mido.MidiFile(filename=midi_file)
         else:
-            # mido obj
-            mido_obj = midi_file
+            if isinstance(midi_file, str):
+                # filename
+                mido_obj = mido.MidiFile(filename=midi_file)
+            else:
+                raise ValueError('[!] Invalid file name')
 
-        # ticks_per_beat
-        self.ticks_per_beat =  mido_obj.ticks_per_beat
+            # ticks_per_beat
+            self.ticks_per_beat = mido_obj.ticks_per_beat
 
-        # convert delta time to cumulative time
-        mido_obj = self._convert_delta_to_cumulative(mido_obj)
+            # convert delta time to cumulative time
+            mido_obj = self._convert_delta_to_cumulative(mido_obj)
 
-        # tempo
-        self.tempo_changes = self._load_tempo_changes(mido_obj)
+            # load tempo changes
+            self.tempo_changes = self._load_tempo_changes(mido_obj)
 
-        # Update the array which maps ticks to time
-        self.max_tick = max([max([e.time for e in t]) for t in mido_obj.tracks]) + 1
+            # load key signatures
+            self.key_signature_changes = self._load_key_signatures(mido_obj)
 
-        # Populate the list of key and time signature changes
-        self.key_signature_changes = self._load_key_signatures(mido_obj)
-        self.time_signature_changes = self._load_time_signatures(mido_obj)
+            # load time signatures
+            self.time_signature_changes = self._load_time_signatures(mido_obj)
 
-        # text
-        self.markers = self._load_markers(mido_obj)
-        self.lyrics = self._load_lyrics(mido_obj)
+            # load markers
+            self.markers = self._load_markers(mido_obj)
+            
+            # load lyrics
+            self.lyrics = self._load_lyrics(mido_obj)
 
-        # sort
-        self.time_signature_changes.sort(key=lambda ts: ts.time)
-        self.key_signature_changes.sort(key=lambda ks: ks.time)
-        self.lyrics.sort(key=lambda lyc: lyc.time)
+            # sort events by time
+            self.time_signature_changes.sort(key=lambda ts: ts.time)
+            self.key_signature_changes.sort(key=lambda ks: ks.time)
+            self.lyrics.sort(key=lambda lyc: lyc.time)
 
-        # Populate the list of instruments
-        self.instruments = self._load_instruments(mido_obj)
+            # compute max tick
+            self.max_tick = max([max([e.time for e in t]) for t in mido_obj.tracks]) + 1
 
+            # load instruments
+            self.instruments = self._load_instruments(mido_obj)
+        
+        # tick and sec mapping
+        
 
     def _convert_delta_to_cumulative(self, mido_obj):
         for track in mido_obj.tracks:
@@ -76,13 +76,15 @@ class MidiFile(object):
         return mido_obj
 
     def _load_tempo_changes(self, mido_obj):
-        tempo_changes = [TempoChange(DEFAULT_TEMPO, 0)]
+        # default bpm
+        tempo_changes = [TempoChange(DEFAULT_BPM, 0)]
 
-        # traversing all tracks to seek messages
+        # traversing
         for track in mido_obj.tracks:
             for event in track:
                 if event.type == 'set_tempo':
-                    tempo = event.tempo
+                    # convert tempo to BPM
+                    tempo = mido.tempo2bpm(event.tempo)
                     tick = event.time
                     if tick == 0:
                         tempo_changes = [TempoChange(tempo, 0)]
@@ -93,10 +95,10 @@ class MidiFile(object):
         return tempo_changes
 
     def _load_time_signatures(self, mido_obj):
-        # metadata: key and time signature
+        # no default
         time_signature_changes = []
 
-        # traversing all tracks to seek messagess
+        # traversing
         for track in mido_obj.tracks:
             for event in track:
                 if event.type == 'time_signature':
@@ -107,9 +109,11 @@ class MidiFile(object):
                     time_signature_changes.append(ts_obj)
         return time_signature_changes
 
-    def _load_key_signatures(self,  mido_obj):
+    def _load_key_signatures(self, mido_obj):
+        # no default
         key_signature_changes = []
-        # traversing all tracks to seek messagess
+
+        # traversing
         for track in mido_obj.tracks:
             for event in track:
                 if event.type == 'key_signature':
@@ -120,8 +124,10 @@ class MidiFile(object):
         return key_signature_changes
 
     def _load_markers(self, mido_obj):
+        # no default
         markers = []
-        # traversing all tracks to seek messagess
+
+        # traversing
         for track in mido_obj.tracks:
             for event in track:
                 if event.type == 'marker':
@@ -129,8 +135,10 @@ class MidiFile(object):
         return markers
 
     def _load_lyrics(self, mido_obj):
+        # no default
         lyrics = []
-        # traversing all tracks to seek messagess
+        
+        # traversing
         for track in mido_obj.tracks:
             for event in track:
                 if event.type == 'lyrics':
@@ -284,31 +292,10 @@ class MidiFile(object):
         return instruments
     
     def get_tick_to_time_mapping(self):
-        return get_tick_to_time_mapping(
+        return _get_tick_to_time_mapping(
             self.ticks_per_beat, 
             self.max_tick, 
             self.tempo_changes)
-
-    def get_instruments_abs_timing(self):
-        tick_to_time = self.get_tick_to_time_mapping()
-        return convert_instruments_timing_from_sym_to_abs(self.instruments, tick_to_time)
-
-    def get_instrument_pianoroll(
-            self, 
-            instrument_idx,
-            binary_thres=None,
-            resample_resolution=None, 
-            resample_method=round,
-            keep_note=True):
-            
-        return convert_note_stream_to_pianoroll(
-            self.instruments[instrument_idx].notes,
-            self.ticks_per_beat,
-            resample_resolution=resample_resolution, 
-            resample_method=resample_method,
-            binary_thres=binary_thres,
-            max_tick=self.max_tick,
-            keep_note=keep_note)
 
     def __repr__(self):
         return self.__str__()
@@ -327,14 +314,8 @@ class MidiFile(object):
         output_str = "\n".join(output_list)
         return output_str
 
-    def get_beats(self):
-        pass
-
-    def get_downbeats(self):
-        pass
-
-
-    def dump(self, filename='res.mid', segment=None, shift=True, instrument_idx=None):
+    def dump(self, filename, segment=None, shift=True, instrument_idx=None):
+        # comparison function
         def event_compare(event1, event2):
             secondary_sort = {
                 'set_tempo': lambda e: (1 * 256 * 256),
@@ -367,26 +348,13 @@ class MidiFile(object):
             pass
         else:
             raise ValueError('Invalid instrument index')
-        # boundary
+
+        # crop segment
         if segment is not None:
             if not isinstance(segment, list) and not isinstance(segment, tuple):
-                raise ValueError('Invalid segment info')
-
-            st = segment[0]
-            ed = segment[1]
-  
-            if type(st) != type(ed):
-                raise ValueError('Type inconsistency')
-
-            if isinstance(st, float):
-                # second
-                tick_to_time = self.get_tick_to_time_mapping()
-                start_tick = get_tick_index_by_seconds(st, tick_to_time)
-                end_tick = get_tick_index_by_seconds(ed, tick_to_time)
-
-            if isinstance(st, int):
-                start_tick = st
-                end_tick = ed
+                raise ValueError('Invalid segment format')
+            start_tick = segment[0]
+            end_tick= segment[1]
 
         # Create file
         midi_parsed = mido.MidiFile(ticks_per_beat=self.ticks_per_beat)
@@ -394,7 +362,7 @@ class MidiFile(object):
         # Create track 0 with timing information
         meta_track = mido.MidiTrack()
 
-        # {meta track}
+        # -- meta track -- #
         # 1. Time signature
         # add default
         add_ts = True
@@ -402,11 +370,12 @@ class MidiFile(object):
         if self.time_signature_changes:
             add_ts = min([ts.time for ts in self.time_signature_changes]) > 0.0
         if add_ts:
-            ts_list.append(mido.MetaMessage(
-                'time_signature', 
-                time=0, 
-                numerator=4, 
-                denominator=4))
+            ts_list.append(
+                mido.MetaMessage(
+                    'time_signature', 
+                    time=0, 
+                    numerator=4, 
+                    denominator=4))
 
         # add each
         for ts in self.time_signature_changes:
@@ -418,7 +387,7 @@ class MidiFile(object):
                     denominator=ts.denominator))
         
         # 2. Tempo
-        # add default
+        # - add default
         add_t = True
         tempo_list = [] 
         if self.tempo_changes:
@@ -428,14 +397,11 @@ class MidiFile(object):
                 mido.MetaMessage(
                     'set_tempo', 
                     time=0, 
-                    tempo=DEFAULT_TEMPO))
+                    tempo=mido.bpm2tempo(DEFAULT_BPM)))
 
-        # add each
+        # - add each
         for t in self.tempo_changes:
-            # type check
-            if isinstance(t.tempo, float):
-                t.tempo = mido.bpm2tempo(t.tempo)
-
+            t.tempo = mido.bpm2tempo(t.tempo)
             tempo_list.append(
                 mido.MetaMessage(
                     'set_tempo',
@@ -472,11 +438,11 @@ class MidiFile(object):
                 key=key_number_to_mido_key_name[ks.key_number]))
 
         if segment:
-            ts_list = include_meta_events_within_range(ts_list, start_tick, end_tick, shift=shift, front=True)
-            tempo_list = include_meta_events_within_range(tempo_list, start_tick, end_tick, shift=shift, front=True)
-            lyrics_list = include_meta_events_within_range(lyrics_list, start_tick, end_tick, shift=shift, front=False)
-            markers_list = include_meta_events_within_range(markers_list, start_tick, end_tick, shift=shift, front=False)
-            key_list = include_meta_events_within_range(key_list, start_tick, end_tick, shift=shift, front=True)
+            ts_list = _include_meta_events_within_range(ts_list, start_tick, end_tick, shift=shift, front=True)
+            tempo_list = _include_meta_events_within_range(tempo_list, start_tick, end_tick, shift=shift, front=True)
+            lyrics_list = _include_meta_events_within_range(lyrics_list, start_tick, end_tick, shift=shift, front=False)
+            markers_list = _include_meta_events_within_range(markers_list, start_tick, end_tick, shift=shift, front=False)
+            key_list = _include_meta_events_within_range(key_list, start_tick, end_tick, shift=shift, front=True)
         meta_track = ts_list + tempo_list + lyrics_list+ markers_list + key_list 
 
         # sort
@@ -487,10 +453,9 @@ class MidiFile(object):
             'end_of_track', time=meta_track[-1].time + 1))
         midi_parsed.tracks.append(meta_track) 
 
-        # {instruments}
+        # -- instruments -- #
         channels = list(range(16))
         channels.remove(9)  # for durm
-
         for cur_idx, instrument in enumerate(self.instruments):
             if instrument_idx:
                 if cur_idx not in instrument_idx:
@@ -534,15 +499,14 @@ class MidiFile(object):
                     value=control_change.value))
 
             if segment:
-                bend_list = include_meta_events_within_range(bend_list, start_tick, end_tick, shift=shift, front=True)
-                cc_list = include_meta_events_within_range(cc_list, start_tick, end_tick, shift=shift, front=True)
+                bend_list = _include_meta_events_within_range(bend_list, start_tick, end_tick, shift=shift, front=True)
+                cc_list = _include_meta_events_within_range(cc_list, start_tick, end_tick, shift=shift, front=True)
             track += (bend_list + cc_list)
 
             # Add all note events
             for note in instrument.notes:
-                # Construct the note-on event
                 if segment:
-                    note = check_note_within_range(note, start_tick, end_tick, shift=True)
+                    note = _check_note_within_range(note, start_tick, end_tick, shift=True)
                 if note:
                     track.append(mido.Message(
                         'note_on', time=note.start,
@@ -582,7 +546,7 @@ class MidiFile(object):
         midi_parsed.save(filename=filename)
 
 
-def check_note_within_range(note, st, ed, shift=True):
+def _check_note_within_range(note, st, ed, shift=True):
     tmp_st = max(st, note.start)
     tmp_ed = max(st, min(note.end, ed))
 
@@ -596,14 +560,12 @@ def check_note_within_range(note, st, ed, shift=True):
     return note
 
 
-def include_meta_events_within_range(events, st, ed, shift=True, front=True):
+def _include_meta_events_within_range(events, st, ed, shift=True, front=True):
     '''
     For time, key signatutr
     '''
-    
     proc_events = []
     num = len(events)
-
     if not events:
         return events
         
@@ -643,7 +605,7 @@ def _find_nearest_np(array, value):
     return (np.abs(array - value)).argmin()
 
 
-def get_tick_index_by_seconds(sec, tick_to_time):
+def _get_tick_index_by_seconds(sec, tick_to_time):
     if not isinstance(sec, float):
         raise ValueError('Seconds should be float')
 
@@ -653,7 +615,7 @@ def get_tick_index_by_seconds(sec, tick_to_time):
         return _find_nearest_np(tick_to_time, sec)
 
 
-def get_tick_to_time_mapping(ticks_per_beat, max_tick, tempo_changes):
+def _get_tick_to_time_mapping(ticks_per_beat, max_tick, tempo_changes):
     tick_to_time = np.zeros(max_tick + 1)
     num_tempi = len(tempo_changes)
 
@@ -665,7 +627,7 @@ def get_tick_to_time_mapping(ticks_per_beat, max_tick, tempo_changes):
         cur_tempo = tempo_changes[idx].tempo
 
         # compute tick scale
-        seconds_per_beat = cur_tempo / 1000000.0
+        seconds_per_beat = 60 / cur_tempo
         seconds_per_tick = seconds_per_beat / float(ticks_per_beat)
 
         # set end tick of interval
@@ -676,21 +638,3 @@ def get_tick_to_time_mapping(ticks_per_beat, max_tick, tempo_changes):
         tick_to_time[start_tick:end_tick + 1] = (acc_time + seconds_per_tick *ticks)
         acc_time = tick_to_time[end_tick]
     return tick_to_time
-
-def convert_instruments_timing_from_sym_to_abs(instruments, tick_to_time):
-    proc_instrs = deepcopy(instruments)
-    for instr in proc_instrs:
-        for note in instr.notes:
-            note.start = float(tick_to_time[note.start])
-            note.end = float(tick_to_time[note.end])
-    return proc_instrs
-
-
-def convert_instruments_timing_from_abs_to_sym(instruments, time_to_tick):
-    proc_instrs = deepcopy(instruments)
-    for instr in proc_instrs:
-        for note in instr.notes:
-            # find nearest
-            note.start = _find_nearest_np(time_to_tick, note.start)
-            note.end = _find_nearest_np(time_to_tick, note.end)
-    return proc_instrs
