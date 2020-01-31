@@ -1,6 +1,8 @@
 import numpy as np
 from copy import deepcopy
 from scipy.sparse import csc_matrix
+import miditoolkit.midi.containers as ct
+
 
 '''
 Note Stream: dict
@@ -22,7 +24,7 @@ def get_offsets_pianoroll():
 
 def get_pianoroll(
         note_stream_ori, 
-        ticks_per_beat, 
+        ticks_per_beat=480, 
         downbeat=None, 
         resample_resolution=None, 
         resample_method=round,
@@ -90,5 +92,27 @@ def get_pianoroll(
     return pianoroll      
 
 
-def convert_pianoroll_to_notes():
-    pass
+def convert_pianoroll_to_notes(pianoroll):
+    binarized = pianoroll > 0
+    padded = np.pad(binarized, ((1, 1), (0, 0)), "constant")
+    diff = np.diff(padded.astype(np.int8), axis=0)
+
+    positives = np.nonzero((diff > 0).T)
+    pitches = positives[0]
+    note_ons = positives[1]
+    note_offs = np.nonzero((diff < 0).T)[1]
+
+    notes = []
+    for idx, pitch in enumerate(pitches):
+        st = note_ons[idx]
+        ed = note_offs[idx]
+        velocity = pianoroll[st, pitch]
+        velocity = max(0, min(127, velocity))
+        notes.append(
+            ct.Note(
+                velocity=int(velocity), 
+                pitch=pitch, 
+                start=st, 
+                end=ed))
+
+    return notes
