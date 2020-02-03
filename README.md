@@ -1,5 +1,7 @@
 
 # miditoolkit
+
+**warning: deprecated version**
 Python package for midi/piano-roll manipulation, conversion and visualization.
 
 
