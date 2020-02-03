@@ -1,9 +1,9 @@
 
 # miditoolkit
-
-**warning: deprecated version** 
-**check out the latest update [here](https://github.com/YatingMusic/miditoolkit)**
-Python package for midi/piano-roll manipulation, conversion and visualization.
+ 
+**warning: deprecated version**   
+**check out the latest update [here](https://github.com/YatingMusic/miditoolkit)**  
+Python package for midi/piano-roll manipulation, conversion and visualization.  
 
 
 ## Installation
